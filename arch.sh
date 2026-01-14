@@ -75,14 +75,13 @@ rm -f /mnt/root/.pwfile
 
 if [ "$FW" = "uefi" ]; then
   arch-chroot /mnt /bin/bash -c "bootctl --path=/boot install"
-  KVER=\$(arch-chroot /mnt bash -lc 'ls /boot | grep vmlinuz | head -n1' || true)
-  [ -z "\$KVER" ] && KVER="vmlinuz-linux"
   cat > /mnt/boot/loader/loader.conf <<LOADER
 default arch
 timeout 1
 editor 0
 LOADER
-  cat > /mnt/boot/loader/entries/arch.conf <<ENTRY
+
+cat > /mnt/boot/loader/entries/arch.conf <<ENTRY
 title   Arch Linux
 linux   /vmlinuz-linux
 initrd  /initramfs-linux.img
@@ -98,3 +97,4 @@ touch /mnt/.installed_by_repo_installer
 sync
 umount -R /mnt || true
 msg "Installation finished. Remove ISO and reboot."
+
