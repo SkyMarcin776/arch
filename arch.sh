@@ -59,8 +59,10 @@ sed -i 's/#en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen || true
 locale-gen
 echo "${HOSTNAME}" > /etc/hostname
 useradd -m -G wheel -s /bin/bash "${USERNAME}" || true
-echo "Set password for root:"; passwd root
-echo "Set password for ${USERNAME}:"; passwd "${USERNAME}"
+ROOT_PASS="1234"
+USER_PASS="1273"
+echo "root:${ROOT_PASS}" | chpasswd
+echo "${USERNAME}:${USER_PASS}" | chpasswd
 systemctl enable NetworkManager
 if ! grep -q "^%wheel" /etc/sudoers; then echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers; fi
 EOF
@@ -89,4 +91,5 @@ fi
 touch /mnt/.installed_by_repo_installer
 sync
 umount -R /mnt || true
+
 msg "zakonczono"
