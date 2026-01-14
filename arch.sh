@@ -3,7 +3,6 @@ set -euo pipefail
 
 TARGET="${1:-/dev/sda}"
 MARKER="/mnt/.installed_by_repo_installer"
-
 msg(){ echo -e "\n==> $*"; }
 err(){ echo -e "\nERROR: $*" >&2; exit 1; }
 
@@ -51,6 +50,13 @@ read -rp "Hostname [arch]: " HOSTNAME; HOSTNAME=${HOSTNAME:-arch}
 read -rp "Username [user]: " USERNAME; USERNAME=${USERNAME:-user}
 read -rp "Timezone [Europe/Warsaw]: " TZ; TZ=${TZ:-Europe/Warsaw}
 
+read -rsp "Root password: " ROOT_PASS; echo
+read -rsp "Confirm root password: " ROOT_PASS2; echo
+if [ "$ROOT_PASS" != "$ROOT_PASS2" ]; then echo "Passwords do not match. Aborting." >&2; exit 1; fi
+read -rsp "Password for ${USERNAME}: " USER_PASS; echo
+read -rsp "Confirm password for ${USERNAME}: " USER_PASS2; echo
+if [ "$USER_PASS" != "$USER_PASS2" ]; then echo "User passwords do not match. Aborting." >&2; exit 1; fi
+
 arch-chroot /mnt /bin/bash <<EOF
 ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime
 hwclock --systohc
@@ -59,13 +65,13 @@ sed -i 's/#en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen || true
 locale-gen
 echo "${HOSTNAME}" > /etc/hostname
 useradd -m -G wheel -s /bin/bash "${USERNAME}" || true
-ROOT_PASS="1234"
-USER_PASS="1273"
-echo "root:${ROOT_PASS}" | chpasswd
-echo "${USERNAME}:${USER_PASS}" | chpasswd
 systemctl enable NetworkManager
 if ! grep -q "^%wheel" /etc/sudoers; then echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers; fi
 EOF
+
+printf "root:%s\n%s:%s\n" "$ROOT_PASS" "$USERNAME" "$USER_PASS" > /mnt/root/.pwfile
+arch-chroot /mnt /usr/bin/chpasswd < /mnt/root/.pwfile
+rm -f /mnt/root/.pwfile
 
 if [ "$FW" = "uefi" ]; then
   arch-chroot /mnt /bin/bash -c "bootctl --path=/boot install"
@@ -91,5 +97,4 @@ fi
 touch /mnt/.installed_by_repo_installer
 sync
 umount -R /mnt || true
-
-msg "zakonczono"
+msg "Installation finished. Remove ISO and reboot."
