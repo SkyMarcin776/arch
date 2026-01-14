@@ -1,0 +1,6 @@
+pacman -Sy git
+git clone https://github.com/skymarcin776/arch.git
+cd arch
+chmod +x arch.sh
+sed -i 's/\r$//' arch.sh
+./arch.sh
